@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "api.resolve_queue.schema.json",
+  "title": "ResolveQueueResponse",
+  "type": "object",
+  "required": ["window", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "window": {
+      "type": "object",
+      "required": ["start", "end", "timezone"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "timezone": { "type": "string" }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["surface", "count", "impact", "examples"],
+        "additionalProperties": false,
+        "properties": {
+          "surface": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 },
+          "impact": { "type": "number" },
+          "examples": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["source", "context", "candidates"],
+              "additionalProperties": false,
+              "properties": {
+                "source": { "type": "string" },
+                "context": { "type": "string" },
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["entity_id", "score"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "entity_id": { "type": "string" },
+                      "score": { "type": "number" },
+                      "features": { "type": "object", "additionalProperties": true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

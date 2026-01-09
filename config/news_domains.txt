@@ -1,0 +1,26 @@
+# News domain allowlist for GDELT ingestion
+# One per line, comments start with #
+
+# Entertainment news
+people.com
+eonline.com
+variety.com
+hollywoodreporter.com
+deadline.com
+entertainmentweekly.com
+usmagazine.com
+instyle.com
+
+# Mainstream with strong entertainment coverage
+cnn.com/entertainment
+bbc.com/entertainment
+npr.org/entertainment
+nytimes.com/arts
+washingtonpost.com/entertainment
+theguardian.com/film
+theguardian.com/music
+
+# Trade publications
+thewrap.com
+indiewire.com
+screenrant.com

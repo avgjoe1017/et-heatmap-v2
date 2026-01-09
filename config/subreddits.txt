@@ -1,0 +1,32 @@
+# Entertainment-focused subreddits
+# One per line, comments start with #
+
+# General entertainment
+entertainment
+movies
+television
+popculture
+
+# Celebrity culture
+Fauxmoi
+Deuxmoi
+celebrities
+
+# Specific platforms
+NetflixBestOf
+DisneyPlus
+HBOMax
+ParamountPlus
+
+# Music
+popheads
+TaylorSwift
+music
+
+# TV Shows (examples)
+SuccessionTV
+WhiteLotusHBO
+
+# Movies
+boxoffice
+moviecritic

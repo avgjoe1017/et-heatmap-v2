@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "et-heatmap"
+version = "0.1.0"
+description = "Entertainment Feelings Heatmap - Daily-updated scatter plot of fame vs love"
+authors = [
+    {name = "ET Heatmap Team"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    
+    # Database
+    "psycopg2-binary>=2.9.9",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+    
+    # Data processing
+    "pandas>=2.1.0",
+    "polars>=0.19.0",
+    "duckdb>=0.9.0",
+    
+    # NLP & ML
+    "spacy>=3.7.0",
+    "transformers>=4.35.0",
+    "sentence-transformers>=2.2.0",
+    "bertopic>=0.15.0",
+    "keybert>=0.8.0",
+    "rapidfuzz>=3.5.0",
+    "flashtext>=2.7",
+    "pyahocorasick>=2.1.0",
+    
+    # Entity linking
+    "qwikidata>=0.7.0",
+    
+    # Sentiment analysis
+    "torch>=2.1.0",  # Required by transformers
+    
+    # Source ingestion
+    "praw>=7.7.0",  # Reddit
+    "youtube-transcript-api>=0.6.0",
+    "pytrends>=4.9.0",  # Google Trends
+    "trafilatura>=1.6.0",  # News extraction
+    "snscrape>=0.7.0",  # Social media scraping
+    
+    # Pipeline orchestration
+    "prefect>=2.14.0",
+    
+    # Utilities
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.1",
+    "requests>=2.31.0",
+    
+    # HTTP client
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.11.0",
+    "ruff>=0.1.6",
+    "mypy>=1.7.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true

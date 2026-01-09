@@ -1,0 +1,122 @@
+[
+  {
+    "entity_id": "person_taylor_swift",
+    "entity_key": "person_taylor_swift",
+    "canonical_name": "Taylor Swift",
+    "type": "PERSON",
+    "aliases": ["T-Swift", "Tay", "Taylor", "TSwift", "Tay Tay"],
+    "external_ids": {
+      "wikidata": "Q26876"
+    },
+    "pin_reason": "Always culturally relevant",
+    "context_hints": ["ERAS TOUR", "THE TORTURED POETS DEPARTMENT"]
+  },
+  {
+    "entity_id": "show_succession",
+    "entity_key": "show_succession",
+    "canonical_name": "Succession",
+    "type": "SHOW",
+    "aliases": ["Succession", "Succession HBO", "Succession TV"],
+    "external_ids": {
+      "wikidata": "Q48814841"
+    },
+    "pin_reason": "Award-winning HBO series, high cultural relevance",
+    "context_hints": ["ROY FAMILY", "LOGAN ROY", "WAYSTAR ROYCO"]
+  },
+  {
+    "entity_id": "show_white_lotus",
+    "entity_key": "show_white_lotus",
+    "canonical_name": "The White Lotus",
+    "type": "SHOW",
+    "aliases": ["White Lotus", "The White Lotus", "White Lotus HBO"],
+    "external_ids": {
+      "wikidata": "Q107156474"
+    },
+    "pin_reason": "Award-winning HBO anthology series",
+    "context_hints": ["SICILY", "HAWAII", "TAORMINA"]
+  },
+  {
+    "entity_id": "film_dune",
+    "entity_key": "film_dune",
+    "canonical_name": "Dune",
+    "type": "FILM",
+    "aliases": ["Dune", "Dune 2021", "Dune Part One", "Dune Part Two"],
+    "external_ids": {
+      "wikidata": "Q3487017"
+    },
+    "pin_reason": "Blockbuster franchise, high engagement",
+    "context_hints": ["ARRAKIS", "PAUL ATREIDES", "TIMOTHÉE CHALAMET", "DENIS VILLENEUVE"]
+  },
+  {
+    "entity_id": "franchise_marvel",
+    "entity_key": "franchise_marvel",
+    "canonical_name": "Marvel Cinematic Universe",
+    "type": "FRANCHISE",
+    "aliases": ["MCU", "Marvel", "Marvel Universe", "Marvel Cinematic Universe"],
+    "external_ids": {
+      "wikidata": "Q18770561"
+    },
+    "pin_reason": "Dominant entertainment franchise",
+    "context_hints": ["AVENGERS", "SPIDER-MAN", "THOR", "IRON MAN"]
+  },
+  {
+    "entity_id": "person_timothee_chalamet",
+    "entity_key": "person_timothee_chalamet",
+    "canonical_name": "Timothée Chalamet",
+    "type": "PERSON",
+    "aliases": ["Timothee Chalamet", "Chalamet", "Timmy", "Timmy Chalamet"],
+    "external_ids": {
+      "wikidata": "Q23099609"
+    },
+    "pin_reason": "Rising star, high cultural relevance",
+    "context_hints": ["DUNE", "WONKA", "CALL ME BY YOUR NAME"]
+  },
+  {
+    "entity_id": "person_tom_hanks",
+    "entity_key": "person_tom_hanks",
+    "canonical_name": "Tom Hanks",
+    "type": "PERSON",
+    "aliases": ["Tom Hanks", "Hanks"],
+    "external_ids": {
+      "wikidata": "Q11278"
+    },
+    "pin_reason": "Iconic actor, consistent cultural presence",
+    "context_hints": ["FORREST GUMP", "CAST AWAY", "SAVING PRIVATE RYAN"]
+  },
+  {
+    "entity_id": "show_the_last_of_us",
+    "entity_key": "show_the_last_of_us",
+    "canonical_name": "The Last of Us",
+    "type": "SHOW",
+    "aliases": ["Last of Us", "The Last of Us", "TLOU", "Last of Us HBO"],
+    "external_ids": {
+      "wikidata": "Q111687999"
+    },
+    "pin_reason": "Popular HBO adaptation, high engagement",
+    "context_hints": ["JOEL", "ELLIE", "ZOMBIE", "CORDYCEPS"]
+  },
+  {
+    "entity_id": "streamer_netflix",
+    "entity_key": "streamer_netflix",
+    "canonical_name": "Netflix",
+    "type": "STREAMER",
+    "aliases": ["Netflix", "Netflix Originals"],
+    "external_ids": {
+      "wikidata": "Q342791"
+    },
+    "pin_reason": "Dominant streaming platform",
+    "context_hints": []
+  },
+  {
+    "entity_id": "streamer_disney_plus",
+    "entity_key": "streamer_disney_plus",
+    "canonical_name": "Disney+",
+    "type": "STREAMER",
+    "aliases": ["Disney Plus", "Disney+", "Disney Plus"],
+    "external_ids": {
+      "wikidata": "Q71992709"
+    },
+    "pin_reason": "Major streaming platform",
+    "context_hints": []
+  }
+]

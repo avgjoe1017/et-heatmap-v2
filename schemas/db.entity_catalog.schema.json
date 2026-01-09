@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "db.entity_catalog.schema.json",
+  "title": "EntityCatalogSchema",
+  "description": "Schema for entity catalog entries (pinned and discovered)",
+  "type": "object",
+  "required": ["entity_id", "entity_key", "canonical_name", "entity_type"],
+  "additionalProperties": false,
+  "properties": {
+    "entity_id": { "type": "string", "description": "Unique entity identifier" },
+    "entity_key": { "type": "string", "description": "Stable slug for entity" },
+    "canonical_name": { "type": "string", "description": "Primary display name" },
+    "entity_type": {
+      "type": "string",
+      "enum": ["PERSON", "SHOW", "FILM", "FRANCHISE", "NETWORK_STREAMER", "COUPLE", "BRAND", "CHARACTER"]
+    },
+    "is_pinned": { "type": "boolean", "default": false },
+    "aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "external_ids": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Wikidata, IMDb, etc.",
+      "default": {}
+    },
+    "context_hints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Context clues for resolution (e.g., 'ERAS TOUR')",
+      "default": []
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Genre, network, franchise membership, etc.",
+      "default": {}
+    }
+  }
+}

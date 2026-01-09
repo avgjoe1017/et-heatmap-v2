@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "api.drilldown.schema.json",
+  "title": "EntityDrilldownResponse",
+  "type": "object",
+  "required": ["window", "entity", "metrics", "narrative", "drivers", "themes", "series"],
+  "additionalProperties": false,
+  "properties": {
+    "window": {
+      "type": "object",
+      "required": ["start", "end", "timezone"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "timezone": { "type": "string" }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "required": ["entity_id", "entity_key", "name", "type", "is_pinned"],
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": { "type": "string" },
+        "entity_key": { "type": "string" },
+        "name": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["PERSON", "SHOW", "FILM", "FRANCHISE", "NETWORK_STREAMER", "COUPLE", "BRAND", "CHARACTER"]
+        },
+        "is_pinned": { "type": "boolean" },
+        "external_ids": { "type": "object", "additionalProperties": { "type": "string" }, "default": {} },
+        "aliases": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "relationships": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "parents": { "type": "array", "items": { "type": "string" }, "default": [] },
+            "children": { "type": "array", "items": { "type": "string" }, "default": [] }
+          },
+          "default": { "parents": [], "children": [] }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["x_fame", "y_love", "momentum", "polarization", "confidence", "attention"],
+      "additionalProperties": false,
+      "properties": {
+        "x_fame": { "type": "number", "minimum": 0, "maximum": 100 },
+        "y_love": { "type": "number", "minimum": 0, "maximum": 100 },
+        "momentum": { "type": "number" },
+        "polarization": { "type": "number", "minimum": 0, "maximum": 100 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 100 },
+        "attention": { "type": "number", "minimum": 0, "maximum": 100 },
+        "baseline_fame": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "mentions_explicit": { "type": "integer", "minimum": 0 },
+        "mentions_implicit": { "type": "integer", "minimum": 0 },
+        "sources_distinct": { "type": "integer", "minimum": 0 },
+        "delta_1d": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "x_fame": { "type": "number" },
+            "y_love": { "type": "number" },
+            "momentum": { "type": "number" }
+          },
+          "default": {}
+        },
+        "delta_7d": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "x_fame": { "type": "number" },
+            "y_love": { "type": "number" },
+            "momentum": { "type": "number" }
+          },
+          "default": {}
+        }
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["moved_because"],
+      "additionalProperties": false,
+      "properties": {
+        "moved_because": { "type": "string" },
+        "bullets": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "drivers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rank", "source", "title", "url", "impact_score"],
+        "additionalProperties": false,
+        "properties": {
+          "rank": { "type": "integer", "minimum": 1 },
+          "source": { "type": "string" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "published_at": { "type": ["string", "null"], "format": "date-time" },
+          "impact_score": { "type": "number" },
+          "reason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["theme_id", "label", "keywords", "volume"],
+        "additionalProperties": false,
+        "properties": {
+          "theme_id": { "type": "string" },
+          "label": { "type": "string" },
+          "keywords": { "type": "array", "items": { "type": "string" } },
+          "volume": { "type": "integer", "minimum": 0 },
+          "sentiment_mix": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pos": { "type": "number", "minimum": 0, "maximum": 1 },
+              "neu": { "type": "number", "minimum": 0, "maximum": 1 },
+              "neg": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "default": {}
+          }
+        }
+      }
+    },
+    "series": {
+      "type": "array",
+      "description": "Historical trail points (for timeline scrub/trails).",
+      "items": {
+        "type": "object",
+        "required": ["window_start", "x_fame", "y_love"],
+        "additionalProperties": false,
+        "properties": {
+          "window_start": { "type": "string", "format": "date-time" },
+          "x_fame": { "type": "number", "minimum": 0, "maximum": 100 },
+          "y_love": { "type": "number", "minimum": 0, "maximum": 100 },
+          "momentum": { "type": "number" },
+          "polarization": { "type": "number", "minimum": 0, "maximum": 100 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
+      }
+    }
+  }
+}

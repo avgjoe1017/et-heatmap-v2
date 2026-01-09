@@ -1,0 +1,44 @@
+# Source ingestion configuration
+# Toggle which sources are active in v1 vs later phases
+
+sources:
+  # Phase 1 (v1 core)
+  et_youtube:
+    enabled: true
+    channel_id: ""  # Set in .env or override here
+    fetch_transcripts: true
+    fetch_comments: false  # Phase 3
+  
+  gdelt_news:
+    enabled: true
+    domains_allowlist_file: "config/news_domains.txt"
+    max_items_per_day: 10000
+  
+  reddit:
+    enabled: true
+    subreddits_file: "config/subreddits.txt"
+    max_posts_per_subreddit: 100
+    max_comments_per_post: 50
+  
+  # Phase 2 (v1.1+)
+  google_trends:
+    enabled: true
+    update_frequency: "weekly"  # weekly baseline fame
+    geo: "US"
+  
+  wikipedia_pageviews:
+    enabled: false  # Enable for Phase 2
+    lag_days: 1  # Pageviews lag ~24h
+  
+  # Phase 3 (later)
+  twitter:
+    enabled: false
+    method: "snscrape"  # or "twscrape" (requires auth)
+  
+  tiktok:
+    enabled: false
+    method: "playwright"  # Requires browser automation
+  
+  instagram:
+    enabled: false
+    method: "playwright"  # Requires browser automation

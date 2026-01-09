@@ -1,0 +1,73 @@
+# Source weights and scoring parameters
+# Used in aggregation to compute fame/love/momentum
+
+source_weights:
+  # Fame (attention) weights
+  fame:
+    et_youtube: 1.5  # ET content gets bonus for relevance
+    gdelt_news: 1.2  # News is good attention signal
+    reddit: 1.0
+    google_trends: 0.8  # Baseline only, not daily signal
+    wikipedia_pageviews: 0.6  # Lagged, baseline confirmation
+    twitter: 1.3  # When enabled
+    tiktok: 1.4  # When enabled
+    instagram: 1.2  # When enabled
+  
+  # Love (sentiment) weights
+  love:
+    et_youtube: 1.0  # Neutral, ET tone is generally positive
+    gdelt_news: 0.8  # News tone can skew negative
+    reddit: 1.2  # Strong for love/polarization signal
+    twitter: 1.1  # When enabled
+    tiktok: 1.3  # When enabled
+    instagram: 1.2  # When enabled
+
+# Engagement normalization
+engagement:
+  log_base: 2.718  # Natural log (log1p)
+  percentile_normalize: true
+  min_engagement_for_signal: 1
+
+# Implicit mention weighting
+implicit_mentions:
+  default_weight: 0.5  # Implicit mentions count as 0.5x explicit
+  caption_first_bonus: 0.3  # Bonus if resolved via caption/title context
+  pronoun_resolution_weight: 0.4  # Pronouns resolved to entities
+
+# Recency weighting (within daily 6AM→6AM window)
+recency:
+  half_life_hours: 8  # Exponential decay
+  min_age_minutes: 0
+  max_age_hours: 24
+
+# Scoring thresholds
+thresholds:
+  min_mentions_for_entity: 3  # Need at least N mentions to appear
+  min_confidence_for_display: 0.3  # Minimum confidence score (0-1)
+  dormant_days: 90  # Entity marked dormant after N days inactive
+  polarization_threshold: 0.3  # 30% extreme sentiment = polarizing
+
+# Fame calculation
+fame:
+  baseline_weight: 0.3  # 30% baseline, 70% today attention
+  attention_weight: 0.7
+  log_scale_volume: true
+  source_diversity_bonus: 0.1  # +10% per unique source (max 3)
+
+# Love calculation
+love:
+  sentiment_range: [-1, 1]  # Model output range
+  output_range: [0, 100]  # Axis range (0=hate, 50=neutral, 100=love)
+  toxicity_penalty: 0.2  # Penalize if toxicity detected
+
+# Momentum calculation
+momentum:
+  lookback_days: 7  # Compare today vs 7-day EMA
+  normalization: "z_score"  # or "percentile" or "raw"
+  min_samples: 3  # Need at least N data points
+
+# Confidence calculation
+confidence:
+  effective_sample_size_weight: 0.4
+  source_diversity_weight: 0.3
+  engagement_weight: 0.3

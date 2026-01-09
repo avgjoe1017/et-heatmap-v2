@@ -1,0 +1,87 @@
+---
+description: Always apply. Keep an up-to-date build journal in Markdown so I can later write the story of building this product.
+globs:
+alwaysApply: true
+---
+
+# BUILD JOURNEY RULE (Project Journal)
+
+## Goal
+Maintain a durable, human-readable build journal that captures:
+- what we built
+- why we built it
+- key decisions/tradeoffs
+- what changed (with file paths)
+- what we learned (bugs, surprises, constraints)
+So this can later be transformed into a “journey” writeup (blog/book/case study).
+
+## Journal file location
+Use this single canonical file:
+- `docs/journey/JOURNEY.md`
+
+If it does not exist, create it with the “Journal Bootstrap Template” below.
+
+## When to write
+After ANY of these:
+- shipping a feature, endpoint, UI screen, integration
+- refactor that changes structure/architecture
+- bug fix that required investigation
+- notable decision (tool choice, data model, approach)
+- performance/security/reliability changes
+- adding/removing dependencies or config changes
+
+## What to do every time
+1) Implement the requested work.
+2) Update `docs/journey/JOURNEY.md` by APPENDING a new entry at the bottom.
+3) Keep entries crisp, factual, and useful—no fluff.
+
+## Entry format (append exactly)
+Use this structure for each entry:
+
+### YYYY-MM-DD (Day) — <short title>
+**Time:** HH:MM (local)  
+**Context:** 1–2 sentences on what prompted this work.  
+**Objective:** What “done” means.
+
+**What changed**
+- <bullet describing change> (`path/to/file.ext`)
+- <bullet describing change> (`path/to/file.ext`)
+
+**Decisions**
+- Decision: <what we chose>
+  - Why: <reasoning / constraint>
+  - Alternatives: <what we considered>
+
+**Gotchas / Debugging notes (if any)**
+- Symptom:
+- Root cause:
+- Fix:
+- Prevention (optional):
+
+**Verification**
+- How we verified (tests, manual steps, commands run)
+- Result (pass/fail + any notes)
+
+**Next steps**
+- [ ] <one concrete next step>
+- [ ] <another>
+
+**Narrative nugget (keep it human)**
+2–4 sentences capturing the “moment”: the tension, tradeoff, surprise, or learning—written plainly, not hype.
+
+## Rules of the road
+- Always include file paths for non-trivial changes.
+- If you’re unsure what changed, quickly scan git diff (or describe uncertainty explicitly).
+- Don’t invent metrics, results, or “verification” you didn’t actually do.
+- Keep the journal additive—never rewrite old entries unless correcting an error (and if you do, note it).
+
+## Journal Bootstrap Template (create if missing)
+# Build Journey
+
+A running log of what we built, why we built it, and what we learned—written so it can later become a narrative.
+
+## Index (optional)
+- Add links here if the file gets long.
+
+---
+(Entries append below)

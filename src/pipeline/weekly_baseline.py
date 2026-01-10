@@ -1,21 +1,60 @@
 """
-Weekly baseline fame update (Google Trends, Wikipedia pageviews).
+Weekly baseline fame update job.
+Should run weekly (e.g., Sunday night) to update baseline fame scores.
 """
 
-from datetime import datetime
+import logging
+import sys
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
 
-def update_weekly_baseline(week_start: datetime = None) -> None:
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.pipeline.steps.compute_baseline_fame import update_baseline_fame
+from src.catalog.catalog_loader import load_catalog
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+
+def run_weekly_baseline_update(week_start: datetime = None) -> None:
     """
-    Update entity_weekly_baseline table with Google Trends data.
-    Runs weekly (typically Sunday).
+    Run weekly baseline fame update for all entities.
+    
+    This should be scheduled to run weekly (e.g., Sunday 11pm PT).
+    Updates baseline fame scores using:
+    - Google Trends (weekly interest)
+    - Wikipedia pageviews (lagged ~24h)
+    - 90-day rolling mention volume
     """
-    # TODO: Implement
-    # - Load pinned entities + active entities
-    # - Query Google Trends via pytrends
-    # - Optionally query Wikipedia pageviews
-    # - Normalize to 0..100 scale
-    # - Write to entity_weekly_baseline
-    pass
+    if week_start is None:
+        # Default to start of current week
+        now = datetime.now(timezone.utc)
+        week_start = now - timedelta(days=now.weekday())
+        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    logger.info(f"Starting weekly baseline fame update for week starting {week_start.isoformat()}")
+    
+    # Load all entities
+    catalog = load_catalog()
+    logger.info(f"Loaded {len(catalog)} entities from catalog")
+    
+    if not catalog:
+        logger.warning("No entities found in catalog, skipping baseline update")
+        return
+    
+    # Update baseline fame for all entities
+    try:
+        update_baseline_fame(catalog, week_start)
+        logger.info(f"Successfully updated baseline fame for {len(catalog)} entities")
+    except Exception as e:
+        logger.error(f"Failed to update baseline fame: {e}", exc_info=True)
+        raise
+
 
 if __name__ == "__main__":
-    update_weekly_baseline()
+    run_weekly_baseline_update()

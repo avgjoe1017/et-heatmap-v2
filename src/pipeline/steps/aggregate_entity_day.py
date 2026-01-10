@@ -112,8 +112,73 @@ def aggregate_entity_daily(mentions: List[dict], window_start: datetime, documen
             sentiment_neg = 0.0
             sentiment_neu = 1.0
         
-        # Compute attention (weighted mention volume)
-        attention = math.log1p(explicit_count + implicit_count * implicit_weight)
+        # Compute attention (weighted mention volume + engagement)
+        # Base attention from mention counts
+        base_attention = explicit_count + implicit_count * implicit_weight
+        
+        # Add engagement-weighted attention
+        engagement_attention = 0.0
+        for mention in entity_mention_list:
+            doc_id = mention.get("doc_id")
+            doc = documents_map.get(doc_id)
+            if not doc:
+                continue
+            
+            item_id = doc.get("item_id")
+            item = source_items_map.get(item_id)
+            if not item:
+                continue
+            
+            # Get engagement metrics (normalized across sources)
+            engagement = item.get("engagement", {})
+            if isinstance(engagement, str):
+                import json
+                try:
+                    engagement = json.loads(engagement)
+                except:
+                    engagement = {}
+            
+            source = item.get("source", "UNKNOWN").upper()
+            
+            # Normalize engagement by source type
+            source_engagement = 0.0
+            if source == "REDDIT":
+                # Reddit: score + comments
+                score = engagement.get("score", 0) or 0
+                num_comments = engagement.get("num_comments", 0) or 0
+                # Ensure non-negative for log1p (Reddit scores can be negative)
+                engagement_value = max(0, score + num_comments * 2)  # Comments worth 2x
+                source_engagement = math.log1p(engagement_value)
+            elif source == "YOUTUBE":
+                # YouTube: views (log scale), likes, comments
+                view_count = engagement.get("view_count", 0) or 0
+                like_count = engagement.get("like_count", 0) or 0
+                comment_count = engagement.get("comment_count", 0) or 0
+                # Views are on much larger scale (thousands), normalize with log
+                # Engagement: log(views) + log(likes*100) + log(comments*50)
+                # This roughly normalizes to Reddit scale
+                # Ensure non-negative values for log1p
+                view_count = max(0, view_count)
+                like_count = max(0, like_count)
+                comment_count = max(0, comment_count)
+                source_engagement = (
+                    math.log1p(view_count / 1000.0) * 3.0 +  # Views (normalized)
+                    math.log1p(like_count * 10.0) * 2.0 +    # Likes
+                    math.log1p(comment_count * 5.0) * 1.0    # Comments
+                ) / 6.0  # Average
+            elif source == "GDELT":
+                # GDELT: tone score, article views (if available)
+                # For now, just use mention count weight
+                source_engagement = 0.0
+            
+            # Apply source weight
+            source_weight = fame_weights.get(source.lower(), 1.0)
+            engagement_attention += source_engagement * source_weight
+        
+        # Combine base attention with engagement
+        # Weight engagement at 50% of base attention contribution
+        attention_value = max(0, base_attention + engagement_attention * 0.5)
+        attention = math.log1p(attention_value)
         
         # Compute polarization (extreme sentiment share)
         # Polarization = share of mentions with extreme sentiment (>0.6 pos or >0.6 neg)
@@ -127,13 +192,55 @@ def aggregate_entity_daily(mentions: List[dict], window_start: datetime, documen
         
         polarization = extreme_count / max(1, len(entity_mention_list))
         
-        # Compute confidence (based on sample size and source diversity)
-        # Simple heuristic for now
-        confidence = min(100.0, (
-            40.0 * math.log1p(explicit_count) / 10.0 +  # Sample size component
-            30.0 * sources_distinct / 5.0 +  # Source diversity (max at 5 sources)
-            30.0 * math.log1p(explicit_count) / 20.0  # Engagement component
-        ))
+        # Compute confidence (based on sample size, source diversity, and engagement)
+        # Sample size component (0-40 points)
+        sample_size_score = min(40.0, 40.0 * math.log1p(explicit_count) / 10.0)
+        
+        # Source diversity component (0-30 points, max at 5 sources)
+        diversity_score = min(30.0, 30.0 * sources_distinct / 5.0)
+        
+        # Engagement component (0-30 points) - signals quality of attention
+        # Higher engagement = more reliable signal
+        total_engagement = 0.0
+        for mention in entity_mention_list:
+            doc_id = mention.get("doc_id")
+            doc = documents_map.get(doc_id)
+            if not doc:
+                continue
+            
+            item_id = doc.get("item_id")
+            item = source_items_map.get(item_id)
+            if not item:
+                continue
+            
+            engagement = item.get("engagement", {})
+            if isinstance(engagement, str):
+                import json
+                try:
+                    engagement = json.loads(engagement)
+                except:
+                    engagement = {}
+            
+            source = item.get("source", "UNKNOWN").upper()
+            if source == "REDDIT":
+                score = engagement.get("score", 0) or 0
+                # Ensure non-negative for log1p (Reddit scores can be negative)
+                total_engagement += math.log1p(max(0, score))
+            elif source == "YOUTUBE":
+                view_count = max(0, engagement.get("view_count", 0) or 0)
+                like_count = max(0, engagement.get("like_count", 0) or 0)
+                if view_count > 0:
+                    total_engagement += math.log1p(view_count / 100.0)  # Normalized
+                else:
+                    total_engagement += math.log1p(like_count)
+            # GDELT and others: minimal engagement boost
+        
+        # Ensure non-negative for log1p calculation
+        engagement_ratio = max(0, total_engagement / max(1, explicit_count))
+        engagement_score = min(30.0, 30.0 * math.log1p(engagement_ratio) / 5.0)
+        
+        confidence = sample_size_score + diversity_score + engagement_score
+        confidence = min(100.0, confidence)
         
         # Store metrics (before axis computation)
         metrics = {

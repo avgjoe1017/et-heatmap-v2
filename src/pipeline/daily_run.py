@@ -98,6 +98,11 @@ def run_daily_pipeline(window_start: Optional[datetime] = None) -> str:
         documents = _normalize_documents(source_items)
         logger.info(f"Normalized {len(documents)} documents")
         
+        # Stage 2b: Deduplicate documents
+        logger.info("Stage 2b: Deduplicating documents...")
+        documents = _dedupe_documents(documents)
+        logger.info(f"After deduplication: {len(documents)} unique documents")
+        
         # Stage 3: Extract mentions
         logger.info("Stage 3: Extracting mentions...")
         from src.catalog.catalog_loader import load_catalog
@@ -112,6 +117,36 @@ def run_daily_pipeline(window_start: Optional[datetime] = None) -> str:
             mentions, documents, catalog, source_items
         )
         logger.info(f"Resolved {len(resolved_mentions)} mentions, {len(unresolved_mentions)} unresolved")
+        
+        # Store unresolved mentions from resolution stage
+        if unresolved_mentions:
+            from src.storage.dao.unresolved import UnresolvedDAO
+            
+            with UnresolvedDAO() as dao:
+                stored_count = 0
+                for u in unresolved_mentions:
+                    try:
+                        u_data = {
+                            "unresolved_id": u.get("unresolved_id") or f"unresolved_{hash(u.get('surface', ''))}",
+                            "doc_id": u.get("doc_id", ""),
+                            "surface": u.get("surface", ""),
+                            "surface_norm": u.get("surface_norm") or u.get("surface", "").lower(),
+                            "sent_idx": u.get("sent_idx"),
+                            "context": u.get("context", "")[:500],
+                            "candidates": u.get("candidates", []),
+                            "top_score": u.get("top_score"),
+                            "second_score": u.get("second_score"),
+                            "created_at": u.get("created_at") or datetime.now(timezone.utc),
+                        }
+                        dao.create_unresolved_mention(u_data)
+                        stored_count += 1
+                    except Exception as e:
+                        error_msg = str(e)
+                        if "UNIQUE constraint" in error_msg or "duplicate" in error_msg.lower():
+                            pass  # Already exists, skip
+                        else:
+                            logger.warning(f"Failed to store unresolved mention: {e}")
+                logger.info(f"Stored {stored_count} unresolved mentions in database")
         
         # Stage 5: Score sentiment
         logger.info("Stage 5: Scoring sentiment...")
@@ -179,9 +214,23 @@ def _ingest_sources(window_start: datetime, window_end: datetime) -> list:
         except Exception as e:
             logger.error(f"Reddit ingestion failed: {e}", exc_info=True)
     
-    # TODO: Add other sources
-    # from src.pipeline.steps.ingest_gdelt_news import ingest_gdelt_news
-    # from src.pipeline.steps.ingest_et_youtube import ingest_et_youtube
+    # GDELT News ingestion
+    try:
+        from src.pipeline.steps.ingest_gdelt_news import ingest_gdelt_news
+        gdelt_items = ingest_gdelt_news(window_start, window_end)
+        source_items.extend(gdelt_items)
+        logger.info(f"Ingested {len(gdelt_items)} GDELT news items")
+    except Exception as e:
+        logger.error(f"GDELT ingestion failed: {e}", exc_info=True)
+    
+    # ET YouTube ingestion
+    try:
+        from src.pipeline.steps.ingest_et_youtube import ingest_et_youtube
+        youtube_items = ingest_et_youtube(window_start, window_end)
+        source_items.extend(youtube_items)
+        logger.info(f"Ingested {len(youtube_items)} YouTube items")
+    except Exception as e:
+        logger.error(f"YouTube ingestion failed: {e}", exc_info=True)
     
     # Store source items in database (skip duplicates gracefully)
     if source_items:
@@ -212,17 +261,31 @@ def _normalize_documents(source_items: list) -> list:
     
     documents = normalize_documents(source_items)
     
-    # Store documents in database
-    if documents:
+    return documents
+
+
+def _dedupe_documents(documents: list) -> list:
+    """Deduplicate documents."""
+    from src.pipeline.steps.dedupe_docs import dedupe_documents
+    
+    deduplicated = dedupe_documents(documents)
+    
+    # Store deduplicated documents in database
+    if deduplicated:
         from src.storage.dao.documents import DocumentDAO
         with DocumentDAO() as dao:
-            for doc in documents:
+            for doc in deduplicated:
                 try:
                     dao.create_document(doc)
                 except Exception as e:
-                    logger.warning(f"Failed to store document {doc.get('doc_id')}: {e}")
+                    error_msg = str(e)
+                    if "UNIQUE constraint" in error_msg or "duplicate" in error_msg.lower():
+                        # Document already exists, skip silently
+                        pass
+                    else:
+                        logger.warning(f"Failed to store document {doc.get('doc_id')}: {e}")
     
-    return documents
+    return deduplicated
 
 
 def _extract_mentions(documents: list, catalog: list) -> tuple:
@@ -275,9 +338,8 @@ def _aggregate_entity_daily(mentions: list, window_start: datetime, documents: l
 
 def _compute_axes(entity_metrics: list, window_start: datetime) -> list:
     """Compute fame/love axes."""
-    # TODO: Import and call compute_axes
-    # from src.pipeline.steps.compute_axes import compute_axes
-    return entity_metrics
+    from src.pipeline.steps.compute_axes import compute_axes
+    return compute_axes(entity_metrics, window_start)
 
 
 def _build_drivers(mentions: list, entity_metrics: list, documents: list, source_items: list) -> list:

@@ -37,4 +37,20 @@ export async function getLatestRun() {
   return response.data;
 }
 
+export async function listRuns(limit = 100, status?: string) {
+  const response = await api.get('/runs', {
+    params: { limit, status },
+  });
+  return response.data;
+}
+
+export async function resolveMention(unresolvedId: string, entityId: string, alias?: string) {
+  const response = await api.post('/resolve-queue/resolve', {
+    unresolved_id: unresolvedId,
+    entity_id: entityId,
+    alias,
+  });
+  return response.data;
+}
+
 export default api;

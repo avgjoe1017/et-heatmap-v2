@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: et-heatmap-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-et_heatmap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-et_heatmap_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-et_heatmap}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-et_heatmap}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - et-heatmap-network
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: et-heatmap-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-et_heatmap}:${POSTGRES_PASSWORD:-et_heatmap_dev_password}@postgres:5432/${POSTGRES_DB:-et_heatmap}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
+      REDDIT_USERNAME: ${REDDIT_USERNAME}
+      REDDIT_PASSWORD: ${REDDIT_PASSWORD}
+      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-et-heatmap/0.1.0}
+      SENTRY_DSN: ${SENTRY_DSN}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    volumes:
+      # Mount source code for hot reload in development
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - et-heatmap-network
+    restart: unless-stopped
+
+  # Frontend (React/Vite)
+  frontend:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: et-heatmap-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - et-heatmap-network
+    restart: unless-stopped
+
+  # Redis (Optional - for caching)
+  redis:
+    image: redis:7-alpine
+    container_name: et-heatmap-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - et-heatmap-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  et-heatmap-network:
+    driver: bridge

@@ -89,10 +89,42 @@ def build_drivers(
             
             mention_count = len(item_mention_list)
             
-            # Engagement score (log scale)
-            score = engagement.get("score", 0) or 0
-            num_comments = engagement.get("num_comments", 0) or 0
-            engagement_score = math.log1p(score + num_comments)
+            # Engagement score (normalized by source type)
+            source = item.get("source", "UNKNOWN").upper()
+            engagement_score = 0.0
+            
+            if source == "REDDIT":
+                score = engagement.get("score", 0) or 0
+                num_comments = engagement.get("num_comments", 0) or 0
+                # Ensure non-negative for log1p (Reddit scores can be negative)
+                engagement_value = max(0, score + num_comments * 2)
+                engagement_score = math.log1p(engagement_value)
+            elif source == "YOUTUBE":
+                # For videos: views, likes, comments
+                view_count = engagement.get("view_count", 0) or 0
+                like_count = engagement.get("like_count", 0) or 0
+                comment_count = engagement.get("comment_count", 0) or 0
+                # For comments: likes, replies
+                reply_count = engagement.get("reply_count", 0) or 0
+                
+                if view_count > 0:
+                    # It's a video
+                    engagement_score = (
+                        math.log1p(view_count / 1000.0) * 3.0 +
+                        math.log1p(like_count * 10.0) * 2.0 +
+                        math.log1p(comment_count * 5.0) * 1.0
+                    ) / 6.0
+                else:
+                    # It's a comment
+                    engagement_score = math.log1p(like_count * 10.0 + reply_count * 5.0)
+            elif source == "GDELT":
+                # GDELT articles: tone score if available
+                tone = engagement.get("tone", 0) or 0
+                engagement_score = math.log1p(abs(tone) * 10.0)
+            else:
+                # Fallback: generic engagement
+                score = engagement.get("score", 0) or 0
+                engagement_score = math.log1p(score)
             
             # Average sentiment (positive = higher impact)
             total_sentiment = 0.0

@@ -23,24 +23,41 @@ A daily-updated scatter-plot heatmap that places **people, shows, films, franchi
 ## Quick Start
 
 ```bash
-# Install Python dependencies
+# 1. Install Python dependencies
 pip install -e .
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your database and API keys
+# 2. Set up environment variables
+# Create .env file with:
+#   - DATABASE_URL (defaults to SQLite: sqlite:///./data/et_heatmap.db)
+#   - YOUTUBE_API_KEY (required for YouTube ingestion)
+#   - REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET (required for Reddit ingestion)
+#   - REDDIT_USERNAME, REDDIT_PASSWORD (optional, for authenticated access)
+#   - LOG_LEVEL (optional, defaults to INFO)
+#   - LOG_FILE (optional, defaults to logs/app.log, set to "none" to disable)
 
-# Run database migrations
-python -m src.storage.migrate
+# 3. Validate configuration
+python scripts/validate_config.py
 
-# Run daily pipeline
-python -m src.pipeline.daily_run
+# 4. Initialize database and load entities
+python scripts/setup.py
 
-# Start API server
-python -m src.app.main
+# 5. Test individual components (optional)
+python scripts/test_youtube.py  # Test YouTube ingestion
+python scripts/test_pipeline.py  # Test full pipeline
 
-# Start UI dev server
+# 6. Run daily pipeline
+python scripts/run_pipeline.py
+# Or with custom window: python scripts/run_pipeline.py 2024-01-01T00:00:00Z
+
+# 7. Start API server
+python scripts/run_api.py
+# API will be available at http://localhost:8000
+# API Documentation: http://localhost:8000/docs
+# Health Check: http://localhost:8000/health
+
+# 8. Start UI dev server (in separate terminal)
 cd ui && npm install && npm run dev
+# UI will be available at http://localhost:5173
 ```
 
 ## Project Structure
@@ -62,11 +79,19 @@ et-heatmap/
 ## Configuration
 
 See `config/` for:
-- `pinned_entities.json` - Entities always tracked on the heatmap
-- `sources.yaml` - Source ingestion toggles
-- `weights.yaml` - Source weights and scoring parameters
+- `pinned_entities.json` - Entities always tracked on the heatmap (10 entities pre-configured)
+- `sources.yaml` - Source ingestion toggles (Reddit, YouTube, GDELT enabled by default)
+- `weights.yaml` - Source weights and scoring parameters (fame/love weights, engagement normalization)
 - `subreddits.txt` - Reddit subreddit list
-- `news_domains.txt` - News domain allowlist
+- `news_domains.txt` - News domain allowlist (Entertainment news sites)
+
+### Key Features
+
+- **Multi-source ingestion**: Reddit (posts + comments), YouTube (videos + comments), GDELT News
+- **Analytics capture**: Views, likes, comments with cross-source normalization
+- **ML-powered**: Sentiment analysis (transformers), theme clustering (BERTopic), entity resolution
+- **Graceful degradation**: Works without ML dependencies, falls back to simpler methods
+- **Real-time APIs**: Google Trends, Wikipedia pageviews for baseline fame computation
 
 ## Documentation
 

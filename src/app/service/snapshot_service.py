@@ -77,11 +77,35 @@ def build_snapshot(window_start: Optional[datetime] = None) -> dict:
         if not entity:
             continue  # Skip if entity not found
         
-        # Load aliases
+        # Load aliases + relationships
         with EntityDAO() as entity_dao:
             aliases_query = "SELECT alias FROM entity_aliases WHERE entity_id = :entity_id"
             alias_results = entity_dao.execute_raw(aliases_query, {"entity_id": entity_id})
             aliases = [row[0] for row in alias_results]
+
+            parents_query = """
+                SELECT parent_entity_id FROM entity_relationships
+                WHERE child_entity_id = :entity_id AND rel_type = 'PARENT_CHILD'
+            """
+            parent_results = entity_dao.execute_raw(parents_query, {"entity_id": entity_id})
+            parent_ids = [row[0] for row in parent_results]
+
+            children_query = """
+                SELECT child_entity_id FROM entity_relationships
+                WHERE parent_entity_id = :entity_id AND rel_type = 'PARENT_CHILD'
+            """
+            child_results = entity_dao.execute_raw(children_query, {"entity_id": entity_id})
+            child_ids = [row[0] for row in child_results]
+
+        metadata = entity.get("metadata", {})
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        tags = metadata.get("tags", [])
+        if not isinstance(tags, list):
+            tags = []
         
         # Build entity point
         point = {
@@ -101,9 +125,9 @@ def build_snapshot(window_start: Optional[datetime] = None) -> dict:
             "sources_distinct": int(metrics["sources_distinct"]),
             "is_pinned": entity.get("is_pinned", False),
             "is_dormant": metrics.get("is_dormant", False),
-            "tags": [],  # TODO: Load from metadata
-            "parent_ids": [],  # TODO: Load relationships
-            "child_ids": [],  # TODO: Load relationships
+            "tags": tags,
+            "parent_ids": parent_ids,
+            "child_ids": child_ids,
         }
         points.append(point)
     

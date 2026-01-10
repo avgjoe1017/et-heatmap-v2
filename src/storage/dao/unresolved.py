@@ -80,15 +80,14 @@ class UnresolvedDAO(BaseDAO):
         if isinstance(window_end, datetime):
             window_end = window_end.isoformat()
         
+        # SQLite doesn't support MAX on JSONB, so we'll fetch a sample row per group
         query = """
             SELECT 
                 u.surface,
                 u.surface_norm,
                 COUNT(*) as count,
                 MAX(u.top_score) as top_score,
-                MAX(u.second_score) as second_score,
-                MAX(u.context) as example_context,
-                MAX(u.candidates) as example_candidates
+                MAX(u.second_score) as second_score
             FROM unresolved_mentions u
             JOIN documents d ON u.doc_id = d.doc_id
             WHERE d.doc_timestamp >= :window_start
@@ -102,14 +101,38 @@ class UnresolvedDAO(BaseDAO):
         
         aggregated = []
         for row in result:
+            surface_norm = row[1]
+            
+            # Get a sample unresolved mention for context and candidates
+            sample_query = """
+                SELECT context, candidates
+                FROM unresolved_mentions
+                WHERE surface_norm = :surface_norm
+                LIMIT 1
+            """
+            sample_result = self.execute_raw(sample_query, {"surface_norm": surface_norm})
+            sample_rows = [dict(r._mapping) for r in sample_result]
+            
+            example_context = sample_rows[0].get("context", "") if sample_rows else ""
+            example_candidates_raw = sample_rows[0].get("candidates", "[]") if sample_rows else "[]"
+            
+            # Parse candidates (handle JSONB string or already parsed)
+            if isinstance(example_candidates_raw, str):
+                try:
+                    example_candidates = json.loads(example_candidates_raw)
+                except:
+                    example_candidates = []
+            else:
+                example_candidates = example_candidates_raw if isinstance(example_candidates_raw, list) else []
+            
             agg = {
                 "surface": row[0],
-                "surface_norm": row[1],
+                "surface_norm": surface_norm,
                 "count": row[2],
-                "top_score": row[3],
-                "second_score": row[4],
-                "example_context": row[5],
-                "example_candidates": json.loads(row[6]) if row[6] else []
+                "top_score": row[3] if row[3] is not None else None,
+                "second_score": row[4] if row[4] is not None else None,
+                "example_context": example_context,
+                "example_candidates": example_candidates
             }
             aggregated.append(agg)
         

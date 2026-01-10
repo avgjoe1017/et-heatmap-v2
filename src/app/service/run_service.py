@@ -2,10 +2,10 @@
 Service layer for pipeline run status and metrics.
 """
 
-import json
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Optional, List, Dict, Any
 from src.storage.dao.runs import RunDAO
+from src.storage.dao.snapshots import SnapshotDAO
+import json
 
 
 def get_latest_run() -> Optional[dict]:
@@ -17,40 +17,46 @@ def get_latest_run() -> Optional[dict]:
         if not run:
             return None
         
-        # Load run metrics
-        run_id = run["run_id"]
-        run_metrics = _get_run_metrics(run_id)
-        
-        return {
-            **run,
-            "metrics": run_metrics
-        }
+        # Add run metrics
+        run["metrics"] = _get_run_metrics(run["run_id"])
+        return run
 
 
 def get_run(run_id: str) -> Optional[dict]:
     """
-    Get a specific pipeline run by ID.
+    Get a specific pipeline run by ID with metrics.
     """
     with RunDAO() as run_dao:
         run = run_dao.get_run(run_id)
         if not run:
             return None
         
-        # Load run metrics
-        run_metrics = _get_run_metrics(run_id)
-        
-        return {
-            **run,
-            "metrics": run_metrics
-        }
+        # Add run metrics
+        run["metrics"] = _get_run_metrics(run_id)
+        return run
+
+
+def list_runs(limit: int = 100, status: Optional[str] = None) -> List[dict]:
+    """
+    List pipeline runs, optionally filtered by status.
+    Returns most recent runs first.
+    """
+    with RunDAO() as run_dao:
+        runs = run_dao.list_runs(limit=limit, status=status)
+        return runs
 
 
 def _get_run_metrics(run_id: str) -> Optional[dict]:
-    """Get run_metrics for a run."""
-    query = "SELECT * FROM run_metrics WHERE run_id = :run_id"
-    
-    with RunDAO() as run_dao:
-        result = run_dao.execute_raw(query, {"run_id": run_id})
+    """
+    Get run metrics for a specific run.
+    """
+    with SnapshotDAO() as snapshot_dao:
+        query = """
+            SELECT * FROM run_metrics 
+            WHERE run_id = :run_id
+            LIMIT 1
+        """
+        result = snapshot_dao.execute_raw(query, {"run_id": run_id})
         rows = [dict(row._mapping) for row in result]
         
         if not rows:
@@ -58,10 +64,14 @@ def _get_run_metrics(run_id: str) -> Optional[dict]:
         
         metrics = rows[0]
         
-        # Parse JSON fields
-        metrics["source_counts"] = json.loads(metrics.get("source_counts", "{}"))
-        metrics["mention_counts"] = json.loads(metrics.get("mention_counts", "{}"))
-        metrics["unresolved_top"] = json.loads(metrics.get("unresolved_top", "[]"))
-        metrics["timings_ms"] = json.loads(metrics.get("timings_ms", "{}"))
+        # Parse JSONB fields
+        if isinstance(metrics.get("source_counts"), str):
+            metrics["source_counts"] = json.loads(metrics["source_counts"])
+        if isinstance(metrics.get("mention_counts"), str):
+            metrics["mention_counts"] = json.loads(metrics["mention_counts"])
+        if isinstance(metrics.get("unresolved_top"), str):
+            metrics["unresolved_top"] = json.loads(metrics["unresolved_top"])
+        if isinstance(metrics.get("timings_ms"), str):
+            metrics["timings_ms"] = json.loads(metrics["timings_ms"])
         
         return metrics

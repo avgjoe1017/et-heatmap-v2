@@ -1,208 +1,139 @@
-# ET Heatmap Quick Start Guide
+# ET Heatmap - Quick Start Guide
 
-## Prerequisites
+## 🚀 Running the Application
 
-- Python 3.10+
-- Node.js 18+ (for UI)
-- PostgreSQL or SQLite (SQLite for local development)
+### Prerequisites
+- Python 3.10+ installed
+- Node.js 18+ installed
+- `.env` file configured with API keys (see `.env.example`)
 
-## Initial Setup
+### Quick Start (Windows PowerShell)
 
-1. **Clone and install Python dependencies:**
-   ```bash
-   pip install -e .
-   ```
+```powershell
+# 1. Install Python dependencies
+pip install -e .
 
-2. **Set up environment variables:**
-   ```bash
-   # Create .env file (see .env.example for reference)
-   # For SQLite (default):
-   DATABASE_URL=sqlite:///./data/et_heatmap.db
-   
-   # For Postgres:
-   DATABASE_URL=postgresql://user:password@localhost:5432/et_heatmap
-   ```
+# 2. Set up database
+python scripts/setup.py
 
-3. **Run database migrations:**
-   ```bash
-   python scripts/setup.py
-   ```
-   
-   This will:
-   - Create database tables
-   - Sync pinned entities from `config/pinned_entities.json`
-   - Verify database connection
+# 3. Install frontend dependencies
+cd ui
+npm install
+cd ..
 
-4. **Install UI dependencies:**
-   ```bash
-   cd ui
-   npm install
-   ```
+# 4. Start backend API (in one terminal)
+python scripts/run_api.py
 
-## Running the Application
-
-### Backend API
-
-```bash
-# Start FastAPI server (default port 8000)
-python -m src.app.main
-
-# Or with uvicorn directly:
-uvicorn src.app.main:app --reload --port 8000
-```
-
-API will be available at:
-- http://localhost:8000
-- API docs: http://localhost:8000/docs
-- OpenAPI schema: http://localhost:8000/openapi.json
-
-### Frontend UI
-
-```bash
+# 5. Start frontend UI (in another terminal)
 cd ui
 npm run dev
 ```
 
-UI will be available at:
-- http://localhost:5173
+### Or Use the Startup Script
 
-## Testing the API
-
-### Get Heatmap Snapshot
-
-```bash
-# Latest snapshot
-curl http://localhost:8000/api/snapshots
-
-# Specific window
-curl "http://localhost:8000/api/snapshots?window_start=2024-12-01T00:00:00Z"
+```powershell
+# Run the PowerShell startup script
+.\scripts\run_dev.ps1
 ```
 
-### Get Entity Drilldown
+### Access the Application
 
-```bash
-curl http://localhost:8000/api/entities/person_taylor_swift
+Once both services are running:
+
+- **Frontend UI**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+### Required Environment Variables
+
+Create a `.env` file in the project root with:
+
+```env
+# Database (defaults to SQLite)
+DATABASE_URL=sqlite:///./data/et_heatmap.db
+
+# YouTube API (required for YouTube ingestion)
+YOUTUBE_API_KEY=your_youtube_api_key_here
+
+# Reddit API (required for Reddit ingestion)
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+
+# Optional: Reddit authentication
+REDDIT_USERNAME=your_reddit_username
+REDDIT_PASSWORD=your_reddit_password
+
+# Optional: Sentry error tracking
+SENTRY_DSN=your_sentry_dsn
+
+# Optional: Debug mode
+DEBUG=false
+LOG_LEVEL=INFO
 ```
 
-### Get Resolve Queue
+### First Time Setup
 
-```bash
-curl http://localhost:8000/api/resolve-queue
-```
-
-### Get Latest Run Status
-
-```bash
-curl http://localhost:8000/api/runs/latest
-```
-
-## Running the Pipeline
-
-### Daily Pipeline
-
-```bash
-# Run daily pipeline (6AM PT → 6AM PT window)
-python -m src.pipeline.daily_run
-```
-
-### Weekly Baseline Update
-
-```bash
-# Update weekly baseline fame (Google Trends)
-python -m src.pipeline.weekly_baseline
-```
-
-## Database Management
-
-### Migrate Database
-
-```bash
-# Run migrations manually
-python scripts/migrate_db.py
-
-# With custom database URL
-python scripts/migrate_db.py --url sqlite:///./data/custom.db
-```
-
-### Sync Pinned Entities
-
-```bash
-# Sync pinned entities from config to database
-python -m src.catalog.catalog_loader
-```
-
-## Development Workflow
-
-1. **Make code changes**
-2. **Test database operations:**
-   ```bash
-   python -m src.storage.db  # Test database connection
+1. **Copy environment template**:
+   ```powershell
+   Copy-Item .env.example .env
    ```
 
-3. **Test catalog loading:**
-   ```bash
-   python -m src.catalog.catalog_loader
+2. **Edit `.env`** and add your API keys
+
+3. **Install dependencies**:
+   ```powershell
+   pip install -e .
+   cd ui && npm install && cd ..
    ```
 
-4. **Run pipeline (when steps are implemented):**
-   ```bash
-   python -m src.pipeline.daily_run
+4. **Set up database**:
+   ```powershell
+   python scripts/setup.py
    ```
 
-5. **Start API server:**
-   ```bash
-   python -m src.app.main
+5. **Run a pipeline** (to generate data):
+   ```powershell
+   python scripts/run_pipeline.py
    ```
 
-6. **Test API endpoints:**
-   - Use curl or Postman
-   - Or visit http://localhost:8000/docs for interactive API docs
+6. **Start services**:
+   ```powershell
+   # Terminal 1: Backend
+   python scripts/run_api.py
+   
+   # Terminal 2: Frontend
+   cd ui && npm run dev
+   ```
 
-## Troubleshooting
+### Troubleshooting
 
-### Database Connection Issues
+**Backend won't start:**
+- Check that port 8000 is available
+- Verify `.env` file exists and has required API keys
+- Run `python scripts/validate_config.py` to check configuration
 
-- Check `DATABASE_URL` in `.env` file
-- Ensure database exists (Postgres) or data directory exists (SQLite)
-- Run `python scripts/setup.py` to initialize database
+**Frontend won't start:**
+- Check that port 5173 is available
+- Verify `node_modules` exists (run `npm install` in `ui/` directory)
+- Check for TypeScript errors: `cd ui && npm run lint`
 
-### Import Errors
+**No data in heatmap:**
+- Run the pipeline first: `python scripts/run_pipeline.py`
+- Check database has data: `python -c "from src.storage.db import get_session; from src.storage.dao.snapshots import SnapshotDAO; print(SnapshotDAO(get_session()).get_latest())"`
 
-- Ensure you've run `pip install -e .` in the project root
-- Check that Python path includes `src/` directory
-- Verify all dependencies are installed: `pip list`
+**Database errors:**
+- Run migrations: `python scripts/migrate_db.py`
+- Check database file exists: `Test-Path data/et_heatmap.db`
 
-### API Not Starting
+### Development Tips
 
-- Check if port 8000 is already in use
-- Verify FastAPI and uvicorn are installed
-- Check logs for error messages
+- **Hot Reload**: Both frontend and backend support hot reload in development mode
+- **API Docs**: Visit http://localhost:8000/docs for interactive API documentation
+- **Database Viewer**: Use a SQLite browser to inspect `data/et_heatmap.db`
+- **Logs**: Check `logs/app.log` for backend logs
+- **Debug Mode**: Set `DEBUG=true` in `.env` for detailed error messages
 
-### Empty Results
+### Production Deployment
 
-- Database might be empty (no pipeline runs yet)
-- Verify pinned entities are synced: `python -m src.catalog.catalog_loader`
-- Check that pipeline has been run at least once
-
-## Next Steps
-
-1. **Implement first ingestion step:**
-   - Start with Reddit (easiest with PRAW)
-   - Or ET YouTube transcripts
-
-2. **Run full pipeline:**
-   - Ingest sources
-   - Normalize documents
-   - Extract and resolve mentions
-   - Score sentiment
-   - Generate snapshots
-
-3. **Test end-to-end:**
-   - Run pipeline
-   - Check API endpoints return data
-   - View results in UI
-
-4. **Add more sources:**
-   - GDELT news
-   - Wikipedia pageviews
-   - Google Trends
+For production deployment, see `docs/DEPLOYMENT.md` for Docker and cloud deployment instructions.

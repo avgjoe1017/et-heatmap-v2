@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import HeatmapPage from './pages/HeatmapPage';
-import EntityPage from './pages/EntityPage';
-import RunsPage from './pages/RunsPage';
-import ResolveQueuePage from './pages/ResolveQueuePage';
+import Navigation from '../components/Navigation';
+import HeatmapPage from '../pages/HeatmapPage';
+import EntityPage from '../pages/EntityPage';
+import RunsPage from '../pages/RunsPage';
+import ResolveQueuePage from '../pages/ResolveQueuePage';
 
 function App() {
   return (
     <BrowserRouter>
+      <Navigation />
       <Routes>
         <Route path="/" element={<HeatmapPage />} />
         <Route path="/entity/:entityId" element={<EntityPage />} />

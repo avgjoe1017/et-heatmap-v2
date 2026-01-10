@@ -85,6 +85,30 @@ class RunDAO(BaseDAO):
         """Get runs by status."""
         return self.execute_select("runs", {"status": status})
     
+    def list_runs(self, limit: int = 100, status: Optional[str] = None) -> List[dict]:
+        """
+        List runs, optionally filtered by status.
+        Returns most recent runs first.
+        """
+        if status:
+            query = """
+                SELECT * FROM runs 
+                WHERE status = :status 
+                ORDER BY started_at DESC 
+                LIMIT :limit
+            """
+            result = self.execute_raw(query, {"status": status, "limit": limit})
+        else:
+            query = """
+                SELECT * FROM runs 
+                ORDER BY started_at DESC 
+                LIMIT :limit
+            """
+            result = self.execute_raw(query, {"limit": limit})
+        
+        rows = [dict(row._mapping) for row in result]
+        return rows
+    
     def update_run_status(self, run_id: str, status: str, finished_at: Optional[datetime] = None) -> int:
         """
         Update run status.

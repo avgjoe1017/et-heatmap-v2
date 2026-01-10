@@ -14,6 +14,14 @@ export interface EntityPoint {
   confidence: number;
   is_pinned: boolean;
   is_dormant: boolean;
+  attention?: number;
+  baseline_fame?: number | null;
+  mentions_explicit?: number;
+  mentions_implicit?: number;
+  sources_distinct?: number;
+  tags?: string[];
+  parent_ids?: string[];
+  child_ids?: string[];
 }
 
 export interface HeatmapSnapshotResponse {

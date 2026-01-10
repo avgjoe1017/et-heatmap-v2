@@ -1,0 +1,200 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: et-heatmap-postgres-prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-et_heatmap}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - et-heatmap-network
+    restart: always
+    # Security: Don't expose port externally in production
+    # Only accessible via internal network
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: et-heatmap-backend-prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-et_heatmap}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
+      REDDIT_USERNAME: ${REDDIT_USERNAME}
+      REDDIT_PASSWORD: ${REDDIT_PASSWORD}
+      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-et-heatmap/0.1.0}
+      SENTRY_DSN: ${SENTRY_DSN}
+      SENTRY_ENVIRONMENT: production
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-et-heatmap@0.1.0}
+      LOG_LEVEL: INFO
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    volumes:
+      # Don't mount source code in production
+      - ./config:/app/config:ro  # Read-only config
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    networks:
+      - et-heatmap-network
+    restart: always
+    # Deploy with resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Frontend (React/Vite)
+  frontend:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: et-heatmap-frontend-prod
+    networks:
+      - et-heatmap-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: et-heatmap-nginx
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL certificates
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - et-heatmap-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis (for caching)
+  redis:
+    image: redis:7-alpine
+    container_name: et-heatmap-redis-prod
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - et-heatmap-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Backup Service (runs daily)
+  backup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: et-heatmap-backup
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-et_heatmap}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - ./backups:/app/backups
+    command: >
+      sh -c "
+        while true; do
+          python scripts/backup_database.py --action backup &&
+          python scripts/backup_database.py --action rotate
+          sleep 86400
+        done
+      "
+    networks:
+      - et-heatmap-network
+    restart: always
+
+  # Pipeline Scheduler (runs daily at 6 AM)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: et-heatmap-scheduler
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-et_heatmap}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
+      REDDIT_USERNAME: ${REDDIT_USERNAME}
+      REDDIT_PASSWORD: ${REDDIT_PASSWORD}
+      SENTRY_DSN: ${SENTRY_DSN}
+      SENTRY_ENVIRONMENT: production
+      LOG_LEVEL: INFO
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: >
+      sh -c "
+        # Wait for 6 AM PT (14:00 UTC), then run daily
+        while true; do
+          current_hour=$(date -u +%H)
+          if [ $current_hour -eq 14 ]; then
+            python scripts/run_pipeline.py
+            sleep 82800  # Sleep for 23 hours
+          else
+            sleep 3600  # Check every hour
+          fi
+        done
+      "
+    networks:
+      - et-heatmap-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  et-heatmap-network:
+    driver: bridge

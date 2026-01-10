@@ -5,9 +5,10 @@ sources:
   # Phase 1 (v1 core)
   et_youtube:
     enabled: true
-    channel_id: ""  # Set in .env or override here
+    channel_id: "@EntertainmentTonight"  # Entertainment Tonight YouTube channel
     fetch_transcripts: true
-    fetch_comments: false  # Phase 3
+    fetch_comments: true  # Fetch individual comments for sentiment analysis
+    max_comments_per_video: 50  # Top comments per video (sorted by relevance)
   
   gdelt_news:
     enabled: true

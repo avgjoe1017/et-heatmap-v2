@@ -228,19 +228,42 @@ def _empty_drilldown(entity_id: str, window_start: Optional[str] = None, window_
     if window_end is None:
         window_end = datetime.now(timezone.utc).isoformat()
     
+    # Try to load entity info even if no metrics
+    entity_info = {
+        "entity_id": entity_id,
+        "entity_key": entity_id,
+        "name": entity_id,
+        "type": "PERSON",
+        "is_pinned": False,
+        "external_ids": {},
+        "aliases": [],
+        "relationships": {"parents": [], "children": []}
+    }
+    
+    try:
+        with EntityDAO() as entity_dao:
+            entity = entity_dao.get_entity(entity_id)
+            if entity:
+                entity_info = {
+                    "entity_id": entity_id,
+                    "entity_key": entity.get("entity_key", entity_id),
+                    "name": entity["canonical_name"],
+                    "type": entity["entity_type"],
+                    "is_pinned": entity.get("is_pinned", False),
+                    "external_ids": json.loads(entity.get("external_ids", "{}")) if isinstance(entity.get("external_ids"), str) else entity.get("external_ids", {}),
+                    "aliases": [],
+                    "relationships": {"parents": [], "children": []}
+                }
+    except Exception:
+        pass
+    
     return {
         "window": {
             "start": window_start,
             "end": window_end,
             "timezone": "America/Los_Angeles"
         },
-        "entity": {
-            "entity_id": entity_id,
-            "entity_key": entity_id,
-            "name": "",
-            "type": "PERSON",
-            "is_pinned": False
-        },
+        "entity": entity_info,
         "metrics": {
             "x_fame": 0.0,
             "y_love": 50.0,

@@ -1,10 +1,77 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/**
+ * Global styles for ET Heatmap UI.
+ */
+
+/* CSS Variables for Theming */
+:root {
+  /* Light theme (default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e8e8e8;
+  --text-primary: #212121;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border-color: #e0e0e0;
+  --border-color-strong: #cccccc;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-strong: rgba(0, 0, 0, 0.15);
+  
+  /* Accent colors */
+  --primary: #1976d2;
+  --primary-light: #e3f2fd;
+  --success: #4caf50;
+  --success-light: #e8f5e9;
+  --warning: #ff9800;
+  --warning-light: #fff3e0;
+  --error: #f44336;
+  --error-light: #ffebee;
+  --info: #2196f3;
+  --info-light: #e3f2fd;
+  
+  /* Chart colors */
+  --chart-grid: #e0e0e0;
+  --chart-axis: #666666;
+}
+
+[data-theme="dark"], .dark {
+  /* Dark theme */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3d3d3d;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+  --border-color: #404040;
+  --border-color-strong: #555555;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow-strong: rgba(0, 0, 0, 0.5);
+  
+  /* Accent colors (slightly adjusted for dark mode) */
+  --primary: #64b5f6;
+  --primary-light: #1e3a52;
+  --success: #81c784;
+  --success-light: #2e4a33;
+  --warning: #ffb74d;
+  --warning-light: #4a3a1e;
+  --error: #e57373;
+  --error-light: #4a2626;
+  --info: #64b5f6;
+  --info-light: #1e3a52;
+  
+  /* Chart colors */
+  --chart-grid: #404040;
+  --chart-axis: #b0b0b0;
+}
+
+/* Base styles */
+html, body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
+  margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -12,6 +79,81 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  min-height: 100vh;
+/* Mobile-first responsive utilities */
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Hide sidebar on mobile */
+  .sidebar-mobile {
+    order: 2;
+  }
+
+  /* Stack layout on mobile */
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Smaller padding on mobile */
+  .responsive-padding {
+    padding: 12px !important;
+  }
+
+  /* Touch-friendly buttons */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+/* Responsive text sizes */
+@media (max-width: 640px) {
+  h1 { font-size: 24px !important; }
+  h2 { font-size: 20px !important; }
+  body { font-size: 14px !important; }
+}
+
+/* Touch-friendly scrollbars on mobile */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+  }
+}
+
+/* Prevent text selection on UI elements */
+button, .no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
